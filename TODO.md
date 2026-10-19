@@ -1,9 +1,8 @@
-# Attio replica outcomes
+# Vult outcomes
 
-- [x] Rebuild an independent public Attio-style landing experience at `/`, with an Attio wordmark, announcement bar, navigation, hero message, CTAs, product window and responsive mobile layout.
-- [x] Rebuild again from captured Attio source instead of the previous approximation: serve locally sanitized source HTML and rewritten source CSS snapshots for the primary public pages and inspected CRM screens under `client/public/attio-snapshots/`.
-- [x] Provide local route declarations for the complete public sitemap inventory and a route-aware local marketing shell with per-route document titles; 1,000 of 1,001 public URLs returned successfully and `/experts` remained blocked by HTTP 403 during reference capture.
-- [x] Rebuild the dark Attio workspace shell with the Vult workspace mark, compact sidebar, search control, navigation groups, getting-started panel, trial footer, help and Ask Attio actions.
-- [x] Implement local dashboard routes for Home, Tasks, Notes, Emails, Calls, Reports, Sequences, Workflows, Companies, People and Deals with the observed page titles, empty states, controls, sample records and responsive layouts.
-- [x] Preserve the user’s real Attio workspace by keeping all replica state local to the browser and not submitting sign-in, sync, invite, send, export, payment, or account-changing actions. Search, create-task, create-note, compose-email, create-record and the assistant submit affordance now have local demo handlers; tasks, notes and record names persist in browser storage.
-- [ ] Live Attio authentication, CRM mutations, inbox/calendar synchronization, email sending, meeting recording/transcription, workflows, sequences, reports and AI assistant services require separate backend/integration work and are intentionally represented as local UI only.
+- [x] Public Vult landing page at `/` (Attio-style layout, original copy): announcement bar, nav with dropdowns, hero, interactive product window, stats, platform features, AI agents, automations, pricing (yearly/monthly toggle), FAQ, final CTA, footer, responsive mobile menu.
+- [x] Vult logo (`client/public/brand/`), favicon and apple-touch icon.
+- [x] Dark CRM workspace under `/vult/*` rebranded to Vult (sidebar mark, "Ask Vult", search, empty states).
+- [x] Removed captured Attio HTML/CSS snapshots and Attio wordmark from public assets.
+- [ ] Pricing figures, stats and FAQ answers are placeholders — replace with real Vult values.
+- [ ] Authentication, CRM persistence, email/calendar sync and AI agents need backend work; the workspace is local UI only.
