@@ -1,4 +1,4 @@
-# Attio — Website & CRM
+ — Website & CRM
 
 React / Express / tRPC / Drizzle starter, adapted from the Sandbox web-db-user template.
 
