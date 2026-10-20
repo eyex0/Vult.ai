@@ -1,57 +1,87 @@
-import { useEffect, useState } from "react";
-import { Link, Route, Switch, useLocation } from "wouter";
-import {
-  CalendarDays, ChevronDown, ChevronRight, CircleHelp, ClipboardList, FileText,
-  Filter, FolderKanban, Gauge, Grid2X2, Home as HomeIcon, Inbox, LayoutDashboard, Mail,
-  Menu, MoreHorizontal, Network, Plus, Search, Settings2, SlidersHorizontal, Sparkles,
-  SquareCheck, Table2, Users, Workflow, X, Zap
-} from "lucide-react";
-import "./index.css";
+import { MotionConfig } from "framer-motion";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
+import { Toaster } from "sonner";
+import { Redirect, Route, Switch, useLocation } from "wouter";
+import { MarketingLayout } from "@/components/marketing/Layout";
+import { TooltipProvider } from "@/components/ui/Tooltip";
+import { SignInPage, SignUpPage } from "@/pages/auth/Auth";
+import HomePage from "@/pages/marketing/Home";
 
-type CrmPage = "home" | "tasks" | "notes" | "emails" | "calls" | "reports" | "sequences" | "workflows" | "companies" | "people" | "deals" | "users" | "workspaces";
-const navTop = [
-  ["home", "Home", HomeIcon, "/vult/home"], ["tasks", "Tasks", SquareCheck, "/vult/tasks"],
-  ["notes", "Notes", FileText, "/vult/notes"], ["emails", "Emails", Mail, "/vult/emails"],
-  ["calls", "Calls", PhoneIcon, "/vult/calls"], ["reports", "Reports", LayoutDashboard, "/vult/reports"],
-  ["sequences", "Sequences", Zap, "/vult/automations/sequences"], ["workflows", "Workflows", Workflow, "/vult/automations/workflows"],
-] as const;
-const records = [["companies", "Companies", FolderKanban, "/vult/companies"], ["people", "People", Users, "/vult/people"], ["deals", "Deals", Gauge, "/vult/deals"], ["users", "Users", Users, "/vult/users"], ["workspaces", "Workspaces", Grid2X2, "/vult/workspaces"]] as const;
-const defaultCompanies = ["Google", "Microsoft", "Disney", "Apple", "United Airlines", "PayPal", "Airbnb", "LVMH", "Intercom", "Attio"];
-function PhoneIcon(props: any) { return <span className="phone-icon" {...props}>◧</span>; }
-function Mark() { return <span className="mark">V</span>; }
-function useStored<T>(key: string, initial: T) {
-  const [value, setValue] = useState<T>(() => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : initial; } catch { return initial; } });
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* local demo storage can be unavailable in private browsing */ } }, [key, value]);
-  return [value, setValue] as const;
+// Marketing (Home is eager for first paint; the rest load on demand)
+const PlatformPage = lazy(() => import("@/pages/marketing/Platform"));
+const PricingPage = lazy(() => import("@/pages/marketing/Pricing"));
+const CustomersPage = lazy(() => import("@/pages/marketing/Customers"));
+const ChangelogPage = lazy(() => import("@/pages/marketing/Changelog"));
+const AboutPage = lazy(() => import("@/pages/marketing/About"));
+const CareersPage = lazy(() => import("@/pages/marketing/Careers"));
+const ContactPage = lazy(() => import("@/pages/marketing/Contact"));
+const LegalPage = lazy(() => import("@/pages/marketing/Legal"));
+const NotFoundPage = lazy(() => import("@/pages/marketing/NotFound"));
+const AppRoutes = lazy(() => import("@/pages/app/AppRoutes"));
+
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    if (!window.location.hash) window.scrollTo(0, 0);
+  }, [location]);
+  return null;
 }
-function DemoModal({title, children, onClose}:{title:string;children:any;onClose:()=>void}) { return <div className="modal-backdrop" onMouseDown={onClose}><div className="modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><b>{title}</b><button onClick={onClose}><X size={16}/></button></div>{children}</div></div>; }
-function SnapshotFrame({src,title}:{src:string;title:string}) { return <iframe className="attio-snapshot" src={src} title={title}/>; }
-function Sidebar({collapsed,setCollapsed}:{collapsed:boolean;setCollapsed:(v:boolean)=>void}) {
-  const [location] = useLocation(); const [searchOpen,setSearchOpen] = useState(false);
-  const active = (id:string) => id === "home" ? location.endsWith("/home") : location.includes(id);
-  return <aside className={"sidebar "+(collapsed?"collapsed":"")}><a className="skip-link" href="#main-content">Skip to content</a>
-    <div className="workspace"><Mark/>{!collapsed&&<><b>vult</b><ChevronDown size={13}/></>}<button className="collapse" onClick={()=>setCollapsed(!collapsed)}>{collapsed?<Menu size={16}/>:<span>◧</span>}</button></div>
-    <button className="search" onClick={()=>setSearchOpen(true)}><Search size={15}/>{!collapsed&&<><span>Search</span><kbd>CTRL</kbd><kbd>K</kbd></>}</button>
-    <div className="nav-list">{navTop.map(([id,label,Icon,href])=><Link key={id} href={href} className={active(id)?"active":""}><Icon size={16}/>{!collapsed&&label}</Link>)}</div>
-    {!collapsed&&<div className="section-label"><ChevronDown size={12}/> Records</div>}
-    <div className="nav-list records">{records.map(([id,label,Icon,href])=><Link key={id} href={href} className={active(id)?"active":""}><Icon size={16}/>{!collapsed&&label}</Link>)}</div>
-    {!collapsed&&<div className="section-label"><ChevronDown size={12}/> Lists</div>}{!collapsed&&<button className="new-list"><Plus size={14}/> New list</button>}{!collapsed&&<div className="section-label"><ChevronDown size={12}/> Chats</div>}{!collapsed&&<button className="new-list"><Plus size={14}/> New chat</button>}
-    {!collapsed&&<div className="getting-started"><div className="gs-title"><b>Getting started</b><span>0/6</span><MoreHorizontal size={14}/></div><div className="gs-sub">0/6 steps completed&nbsp; Let's go!</div>{["Sync email account","Install our extension","Create a report","Create a workflow","Create a sequence","Explore our apps"].map((x,i)=><div className="gs-row" key={x}><span className="gs-icon">{[Mail,Network,LayoutDashboard,Workflow,Zap,Grid2X2][i] && (()=>{const I=[Mail,Network,LayoutDashboard,Workflow,Zap,Grid2X2][i];return <I size={14}/>})()}</span>{x}</div>)}</div>}
-    <div className="side-bottom">{!collapsed&&<><div className="invite"><Users size={14}/> Invite members</div><div className="trial"><span>◈&nbsp; 14 days left on trial!</span><button>Keep Pro</button></div></>}</div>
-    {searchOpen&&<DemoModal title="Search Attio" onClose={()=>setSearchOpen(false)}><input autoFocus className="modal-input" placeholder="Search records, notes, tasks…"/><p className="modal-help">Search is local to this independent replica.</p></DemoModal>}
-  </aside>;
+
+function Fallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center" aria-busy="true">
+      <span className="size-5 animate-spin rounded-full border-2 border-current border-r-transparent text-muted" />
+      <span className="sr-only">Loading</span>
+    </div>
+  );
 }
-function Header({title}:{title:string}) { return <header className="crm-header"><div className="page-title"><span className="title-icon">{title==="Home"?<HomeIcon size={15}/>:title==="Tasks"?<SquareCheck size={15}/>:title==="Notes"?<FileText size={15}/>:title==="Reports"?<LayoutDashboard size={15}/>:<FolderKanban size={15}/>}</span>{title}</div><div className="header-actions"><button><CircleHelp size={15}/> Help</button><button className="ask"><Sparkles size={14}/> Ask Attio</button></div></header>; }
-function EmptyState({title,copy,button,icon,onAction}:{title:string;copy:string;button?:string;icon:any;onAction?:()=>void}) { const I=icon; return <div className="empty"><div className="empty-art"><I size={48} strokeWidth={1}/></div><h2>{title}</h2><p>{copy}</p>{button&&<button className="blue" onClick={onAction}><Plus size={15}/>{button}</button>}</div>; }
-function Toolbar({sort="Creation date",button,onAction}:{sort?:string;button?:string;onAction?:()=>void}) { return <div className="toolbar"><button className="soft"><SlidersHorizontal size={14}/> Sorted by {sort}</button><button className="soft"><Filter size={14}/> Filter</button><div className="grow"/><button className="icon-btn"><Search size={16}/></button><button className="soft"><Settings2 size={14}/> View settings</button>{button&&<button className="blue small" onClick={onAction}><Plus size={15}/>{button}</button>}</div>; }
-function Home() { const [prompt,setPrompt]=useState(""); const [submitted,setSubmitted]=useState(false); return <><Header title="Home"/><main id="main-content" className="home-main"><h1>Good afternoon, Montaser.</h1><div className="assistant"><textarea value={prompt} onChange={e=>{setPrompt(e.target.value);setSubmitted(false)}} placeholder="Ask anything…"/><div className="composer-footer"><button>Auto <ChevronDown size={13}/></button><span className="composer-hint">{submitted?"Demo request queued locally":prompt?"Ready to ask Attio":""}</span><button className="composer-icon" aria-label="Attach">◉</button><button className="composer-icon" aria-label="Use microphone">♩</button><button className="send" onClick={()=>setSubmitted(true)}><ChevronRight size={16}/></button></div></div><section className="home-section meetings-section"><div className="section-heading"><h3>Meetings</h3><div className="meeting-controls"><button className="date">Today, Oct 19</button><button className="date">‹</button><button className="date">›</button><button className="date">⋮</button></div></div><div className="meeting-card"><div className="meeting-icon"><CalendarDays size={17}/></div><div><b>Turn meetings into opportunities</b><p>Sync your calendar to get instant meeting context</p></div><button className="outline">Sync Microsoft Account</button></div></section><section className="home-section"><div className="section-heading"><h3>Tasks <span className="count">0</span></h3><Link href="/vult/tasks" className="link-button">View all</Link></div><div className="task-card"><ClipboardList size={28}/><div><b>Stay on top of work</b><p>Create tasks for yourself or your team to track next steps</p></div><Link href="/vult/tasks" className="blue small">New task</Link></div></section></main></>; }
-function Tasks() { const [tasks,setTasks]=useStored<string[]>("attio-demo-tasks",[]); const [open,setOpen]=useState(false); const [name,setName]=useState(""); const save=()=>{if(name.trim())setTasks([...tasks,name.trim()]);setName("");setOpen(false)}; return <><Header title="Tasks"/><Toolbar sort="Due date" button="New task" onAction={()=>setOpen(true)}/>{tasks.length===0?<EmptyState title="Tasks" copy="No tasks yet! Create your first task to get started." button="New task" onAction={()=>setOpen(true)} icon={ClipboardList}/>:<div className="local-list">{tasks.map((x,i)=><div key={i}><button className="check" onClick={()=>setTasks(tasks.filter((_,n)=>n!==i))}>○</button>{x}</div>)}</div>}{open&&<DemoModal title="New task" onClose={()=>setOpen(false)}><input autoFocus className="modal-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Task name" onKeyDown={e=>e.key==="Enter"&&save()}/><button className="blue modal-save" onClick={save}>Create task</button></DemoModal>}</>; }
-function Notes() { const [notes,setNotes]=useStored<string[]>("attio-demo-notes",[]); const [open,setOpen]=useState(false); const [name,setName]=useState(""); const save=()=>{if(name.trim())setNotes([...notes,name.trim()]);setName("");setOpen(false)}; return <><Header title="Notes"/><div className="tabs"><button className="tab active">Notes <span>{notes.length}</span></button><button className="tab">Templates <span>0</span></button></div><Toolbar button="New note" onAction={()=>setOpen(true)}/>{notes.length===0?<EmptyState title="Notes" copy="No notes yet! Create your first note to get started." button="New note" onAction={()=>setOpen(true)} icon={FileText}/>:<div className="local-list">{notes.map((x,i)=><div key={i}><FileText size={15}/>{x}</div>)}</div>}{open&&<DemoModal title="New note" onClose={()=>setOpen(false)}><input autoFocus className="modal-input" value={name} onChange={e=>setName(e.target.value)} placeholder="Note title" onKeyDown={e=>e.key==="Enter"&&save()}/><button className="blue modal-save" onClick={save}>Create note</button></DemoModal>}</>; }
-function Emails() { const [open,setOpen]=useState(false); return <><Header title="Emails"/><div className="tabs"><button className="tab active">Drafts <span>0</span></button><button className="tab">Outbox <span>0</span></button><button className="tab">Templates <span>0</span></button><div className="grow"/><button className="blue small" onClick={()=>setOpen(true)}><Plus size={15}/> Compose email</button></div><EmptyState title="Send emails in Attio" copy="No email drafts yet! Send emails without leaving Attio. Mass sending, templates, attachments, and more." icon={Mail}/><div className="learn">Configure mailbox &nbsp; <ChevronRight size={14}/> &nbsp; Email outbox</div>{open&&<DemoModal title="Compose email" onClose={()=>setOpen(false)}><input className="modal-input" placeholder="To"/><input className="modal-input" placeholder="Subject"/><textarea className="modal-textarea" placeholder="Write a draft…"/><button className="blue modal-save" onClick={()=>setOpen(false)}>Save draft</button></DemoModal>}</>; }
-function Calls() { return <><Header title="Calls"/><div className="tabs"><button className="tab active">Calls <span>0</span></button><button className="tab">Insight Templates <span>0</span></button></div><Toolbar sort="Date"/><EmptyState title="Call recordings" copy="No call recordings yet! Record your first call to get started." icon={PhoneIcon}/></>; }
-function Reports() { return <><Header title="Reports"/><Toolbar button="New dashboard"/><div className="reports"><div className="favorite"><small>Favorites</small><b>Favorites</b><span>Dashboards that you favorite will appear here</span></div><div className="table-head"><span>Dashboard</span><span>Reports</span><span>Created at</span></div><div className="table-row"><b>▦ &nbsp; Companies by Country</b><span>▣ &nbsp; Companies by Country Count</span><span>Today</span><span>☆</span></div></div></>; }
-function Automation({type}:{type:"Sequences"|"Workflows"}) { const workflow=type==="Workflows"; return <><Header title={type}/><Toolbar sort={workflow?"Last published":"Creation date"} button={`New ${workflow?"workflow":"sequence"}`}/><EmptyState title={type} copy={`No ${type.toLowerCase()} yet! Create your first ${type.slice(0,-1).toLowerCase()} to get started.`} button={`New ${workflow?"workflow":"sequence"}`} icon={workflow?Workflow:Zap}/></>; }
-function RecordsPage({type}:{type:"Companies"|"People"|"Deals"|"Users"|"Workspaces"}) { const isPeople=type==="People"; const singular=type==="Companies"?"Company":type==="People"?"Person":type.slice(0,-1); const [rows,setRows]=useStored<string[]>(`attio-demo-${type.toLowerCase()}`,type==="Companies"?defaultCompanies:[]); const [open,setOpen]=useState(false); const [name,setName]=useState(""); const save=()=>{if(name.trim())setRows([...rows,name.trim()]);setName("");setOpen(false)}; return <><Header title={type}/><div className="record-toolbar"><button className="soft"><Table2 size={14}/> {isPeople?"Recently Contacted People":"All "+type}</button><button className="soft">View settings <ChevronDown size={13}/></button><div className="grow"/><button className="soft"><Inbox size={14}/> Import / Export</button><button className="blue small" onClick={()=>setOpen(true)}><Plus size={15}/> New {singular}</button></div><Toolbar sort="Last interaction"/><div className="record-table"><div className="record-head"><span>☐</span><b>{singular}</b><span>{isPeople?"Connection strength":"Description"}</span><span>{isPeople?"Last email interaction":"Primary location"}</span><span>{isPeople?"Last calendar interaction":"Foundation date"}</span></div>{rows.map(n=><div className="record-row" key={n}><span>☐</span><b>{n}</b><span>—</span><span>—</span><span>—</span></div>)}{rows.length===0&&<EmptyState title={`No ${type.toLowerCase()} records`} copy={`${type} records let you track your work in Attio.`} button={`New ${singular}`} onAction={()=>setOpen(true)} icon={type==="People"?Users:FolderKanban}/>}</div>{open&&<DemoModal title={`New ${singular}`} onClose={()=>setOpen(false)}><input autoFocus className="modal-input" value={name} onChange={e=>setName(e.target.value)} placeholder={`${singular} name`} onKeyDown={e=>e.key==="Enter"&&save()}/><button className="blue modal-save" onClick={save}>Create {singular.toLowerCase()}</button></DemoModal>}</>; }
-function Dashboard() { const [collapsed,setCollapsed]=useState(false); return <div className="crm"><Sidebar collapsed={collapsed} setCollapsed={setCollapsed}/><div className="crm-content"><Switch><Route path="/vult/home" component={Home}/><Route path="/vult/tasks" component={Tasks}/><Route path="/vult/notes" component={Notes}/><Route path="/vult/emails" component={Emails}/><Route path="/vult/emails/drafts" component={Emails}/><Route path="/vult/calls" component={Calls}/><Route path="/vult/reports" component={Reports}/><Route path="/vult/automations/sequences" component={()=> <Automation type="Sequences"/>}/><Route path="/vult/automations/workflows" component={()=> <Automation type="Workflows"/>}/><Route path="/vult/companies" component={()=> <RecordsPage type="Companies"/>}/><Route path="/vult/people" component={()=> <RecordsPage type="People"/>}/><Route path="/vult/deals" component={()=> <RecordsPage type="Deals"/>}/><Route path="/vult/users" component={()=> <RecordsPage type="Users"/>}/><Route path="/vult/workspaces" component={()=> <RecordsPage type="Workspaces"/>}/><Route component={Home}/></Switch></div></div>; }
-function Marketing() { const [location]=useLocation(); const [routeTitle,setRouteTitle]=useState("Attio: The CRM for agentic revenue"); const snapshots:{[key:string]:string}={"/pricing":"public-pricing","/customers":"public-customers","/apps":"public-apps","/platform/universal-context":"public-universal-context","/platform/data":"public-data","/resources":"public-resources","/contact/sales":"public-contact-sales"}; useEffect(()=>{fetch("/public-route-index.json").then(r=>r.json()).then((items:{path:string;title?:string}[])=>{const item=items.find(x=>x.path===location);const title=item?.title||"Attio";setRouteTitle(title);document.title=title;}).catch(()=>{});},[location]); if(snapshots[location]) return <SnapshotFrame src={`/attio-snapshots/${snapshots[location]}.html`} title={routeTitle}/>; const isHome=location==="/"; const pageLabel=isHome?"agentic revenue":routeTitle.replace(/^Attio:?\s*/i,""); return <div className="marketing live-marketing"><nav className="marketing-nav"><div className="attio-wordmark"><span className="attio-glyph" aria-hidden="true"></span><span>attio</span></div><div className="marketing-links"><a href="/platform/universal-context">Platform <ChevronDown size={13}/></a><a href="/resources">Resources <ChevronDown size={13}/></a><a href="/developers">Developers</a><a href="/customers">Customers</a><a href="/pricing">Pricing</a></div><div><a className="marketing-cta" href="/vult/home">Open Attio</a></div></nav><main className="marketing-hero"><p className="eyebrow">GTM lessons from Elena Verna and more <ChevronRight size={14}/></p>{isHome?<h1>Welcome to agentic revenue.</h1>:<h1>{pageLabel}</h1>}<p className="hero-copy">{isHome?"Attio is the platform that builds pipeline, advances deals, and grows accounts around the clock.":`Explore ${pageLabel.toLowerCase()} in Attio.`}</p><div className="hero-actions"><a href="/contact/sales">Talk to sales</a><a className="marketing-cta" href="/vult/home">Start for free <ChevronRight size={15}/></a></div><div className="hero-window"><div className="window-top"><span/><span/><span/><b>Attio</b></div><div className="window-body"><div className="fake-side"><div className="fake-logo">V</div><div className="fake-line wide"/><div className="fake-line"/><div className="fake-line"/><div className="fake-line"/></div><div className="fake-main"><span className="fake-pill">Universal Context™</span><h2>All of the signals,<br/>none of the noise.</h2><div className="fake-chart"><span/><span/><span/><span/><span/><span/></div></div></div></div></main><section className="marketing-band"><h2>Your team, amplified.</h2><p>Agents prospect and reach out when buyers are looking, building a pipeline of deals ready to win.</p></section></div>; }
-export default function App() { return <Switch><Route path="/vult/automations/:rest*" component={Dashboard}/><Route path="/vult/emails/:rest*" component={Dashboard}/><Route path="/vult/:rest*" component={Dashboard}/><Route path="/" component={Marketing}/><Route component={Marketing}/></Switch>; }
+
+function Marketing({ children }: { children: ReactNode }) {
+  return (
+    <MarketingLayout>
+      <Suspense fallback={<Fallback />}>{children}</Suspense>
+    </MarketingLayout>
+  );
+}
+
+export default function App() {
+  return (
+    <MotionConfig reducedMotion="user">
+      <TooltipProvider delayDuration={250}>
+        <ScrollToTop />
+        <Switch>
+          <Route path="/signin" component={SignInPage} />
+          <Route path="/signup" component={SignUpPage} />
+          <Route path="/app">
+            <Redirect to="/app/home" />
+          </Route>
+          <Route path="/app/*">
+            <Suspense fallback={<div className="h-dvh bg-app" />}>
+              <AppRoutes />
+            </Suspense>
+          </Route>
+          <Route path="/">
+            <MarketingLayout>
+              <HomePage />
+            </MarketingLayout>
+          </Route>
+          <Route path="/platform/:slug">{(p) => <Marketing><PlatformPage slug={p.slug} /></Marketing>}</Route>
+          <Route path="/pricing">{() => <Marketing><PricingPage /></Marketing>}</Route>
+          <Route path="/customers">{() => <Marketing><CustomersPage /></Marketing>}</Route>
+          <Route path="/changelog">{() => <Marketing><ChangelogPage /></Marketing>}</Route>
+          <Route path="/about">{() => <Marketing><AboutPage /></Marketing>}</Route>
+          <Route path="/careers">{() => <Marketing><CareersPage /></Marketing>}</Route>
+          <Route path="/contact">{() => <Marketing><ContactPage /></Marketing>}</Route>
+          <Route path="/legal/:doc">{(p) => <Marketing><LegalPage doc={p.doc} /></Marketing>}</Route>
+          <Route>{() => <Marketing><NotFoundPage /></Marketing>}</Route>
+        </Switch>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            className: "!rounded-xl !border !border-[#2e3033] !bg-[#17181a] !text-[#e9eaee] !font-sans",
+          }}
+        />
+      </TooltipProvider>
+    </MotionConfig>
+  );
+}
